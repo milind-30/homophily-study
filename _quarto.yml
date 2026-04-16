@@ -1,0 +1,25 @@
+project:
+  type: manuscript
+  output-dir: docs
+  render: 
+  - index.qmd
+
+manuscript:
+  code-links: repo
+
+execute:
+  freeze: auto
+
+format:
+  html:
+    toc: true
+    theme: darkly
+    include-before-body:
+      - text: "<sup>†</sup> Milind Muthiah and Shreyas Teegala contributed equally and share first authorship."
+  docx: default
+  apaquarto-pdf:
+    nocorrespondence: true
+    donotrepeattitle: true
+    draftfirst: true
+    filters:
+      - abstract-section

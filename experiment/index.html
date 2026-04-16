@@ -1,0 +1,421 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="UTF-8" />
+        <title>Team Experiment</title>
+
+        <!-- Sortable library for drag-and-drop -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
+
+        <!-- JATOS script (if applicable) -->
+        <script src="jatos.js"></script>
+        <script>
+            /*
+      Set a base URL for file paths.
+      If 'jatos' is defined, use '.', otherwise fallback to '../'.
+    */
+            const base = document.createElement("base");
+            const jatos_defined = typeof jatos !== "undefined";
+            base.href = jatos_defined ? "." : "../";
+            document.head.appendChild(base);
+        </script>
+
+        <!-- jsPsych core + CSS -->
+        <script src="experiment/core/jspsych/jspsych.js"></script>
+        <link
+            href="experiment/core/jspsych/css/jspsych.css"
+            rel="stylesheet"
+            type="text/css"
+        />
+
+        <!-- Combined CSS (homophily + any inline styles) -->
+        <link
+            href="experiment/homophily.css"
+            rel="stylesheet"
+            type="text/css"
+        />
+
+        <!-- jsPsych plugins -->
+        <script src="experiment/core/jspsych/plugins/plugin-instructions.js"></script>
+        <script src="experiment/core/jspsych/plugins/plugin-html-slider-response.js"></script>
+        <script src="experiment/core/jspsych/plugins/plugin-call-function.js"></script>
+        <script src="experiment/core/jspsych/plugins/plugin-survey-html-form.js"></script>
+        <script src="https://unpkg.com/@jspsych/plugin-html-button-response@1.2.0"></script>
+        <script src="experiment/core/jspsych/plugins/plugin-html-keyboard-response.js"></script>
+
+        <!-- Custom plugin for two-team ranking -->
+        <script src="experiment/jspsych-two-team-sortable-rank.js"></script>
+
+        <!-- Character images dictionary -->
+        <script src="experiment/character_images.js"></script>
+
+        <!-- Basic experiment init (defines initializeExperiment()) -->
+        <script src="experiment/core/init_experiment.js"></script>
+
+        <!-- Helper functions (parseDemographics, drawTwoDistinctSets, etc.) -->
+        <script src="experiment/helpers.js"></script>
+    </head>
+    <body></body>
+
+    <script>
+        // Make sure jsPsych is defined before loading config.js
+        window.jsPsych = initializeExperiment();
+    </script>
+    <script src="experiment/config.js"></script>
+    <script>
+    
+    // capture info from Prolific
+    var subject_id = jsPsych.data.getURLVariable('PROLIFIC_PID');
+    var study_id = jsPsych.data.getURLVariable('STUDY_ID');
+    var session_id = jsPsych.data.getURLVariable('SESSION_ID');
+
+    jsPsych.data.addProperties({
+        subject_id: subject_id,
+        study_id: study_id,
+        session_id: session_id
+    });
+
+        // === Global variables for participant demographics ===
+        let participantRace, participantGender, participantAge;
+
+        // === Timeline blocks, defined later ===
+        let choice_trials_block = [];
+        let ranked_trials_block = [];
+
+        /*
+    1) Age Confirmation
+       Using text blocks from config.js: AGE_CONFIRMATION_PAGES
+  */
+        const age_confirmation = {
+            type: jsPsychInstructions,
+            pages: AGE_CONFIRMATION_PAGES,
+            show_clickable_nav: true,
+            allow_backward: false,
+            button_label_next: "I am 18 years of age or older",
+            data: { condition: CONDITION, ordering: RANDOMIZED_ORDER },
+        };
+
+        /*
+    2) Simple instructions
+       Using text blocks from config.js: INSTRUCTIONS_PAGES
+  */
+        const instructions = {
+            type: jsPsychInstructions,
+            pages: INSTRUCTIONS_PAGES,
+            show_clickable_nav: true,
+            allow_backward: false,
+            button_label_next: "Next",
+        };
+
+        /*
+    3) Demographic Questions
+       After this, we know participant's race/gender/age
+  */
+        const demographic_questions = {
+            type: jsPsychSurveyHtmlForm,
+            preamble: DEMOGRAPHIC_QUESTIONS_PREAMBLE,
+            html: DEMOGRAPHIC_QUESTIONS_HTML,
+            button_label: "Next",
+            on_finish: function (data) {
+                const responses = data.response;
+                participantRace = responses.race;
+                participantGender = responses.gender;
+                participantAge = parseInt(responses.age);
+                console.log(
+                    "Participant demographics (raw):",
+                    participantRace,
+                    participantGender,
+                    participantAge,
+                );
+            },
+        };
+
+        /*
+    4) Competitiveness self-rating
+       Using COMPETITIVENESS_SELF_RATING_STIMULUS from config.js
+  */
+        const competitiveness_selfrating = {
+            type: jsPsychHtmlSliderResponse,
+            stimulus: COMPETITIVENESS_SELF_RATING_STIMULUS,
+            labels: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
+            slider_start: 5,
+            min: 0,
+            max: 10,
+            step: 1,
+            slider_width: 500,
+            require_movement: true,
+            button_label: "Next",
+        };
+
+        /*
+    5) Condition-based instructions (competitive or casual)
+  */
+        const instructions_general = {
+            type: jsPsychInstructions,
+            pages: CONDITION ? COMPETITIVE_INSTRUCTIONS : CASUAL_INSTRUCTIONS,
+            show_clickable_nav: true,
+            allow_backward: false,
+            button_label_next: "Next",
+            data: { condition: CONDITION },
+        };
+
+        /*
+    6) Forced-choice instructions
+  */
+        const instructions_forced_choice = {
+            type: jsPsychInstructions,
+            pages: CONDITION
+                ? COMPETITIVE_PAIRWISE_INSTRUCTIONS
+                : CASUAL_PAIRWISE_INSTRUCTIONS,
+            show_clickable_nav: true,
+            allow_backward: true,
+            button_label_next: "Next",
+            button_label_previous: "Previous",
+            data: { condition: CONDITION },
+        };
+
+        /*
+    7) Loading screens
+  */
+        const loading = {
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: LOADING_STIMULUS,
+            trial_duration: 2000,
+        };
+
+        const lobby_loading = {
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: LOBBY_LOADING_STIMULUS,
+            trial_duration: 4000,
+        };
+
+        /*
+    define_trials:
+    After demographics are known, we draw two distinct sets of 8 images:
+    - setA for forced-choice
+    - setB for ranking
+  */
+        let choiceImages = [];
+        let rankImages = [];
+
+        const define_trials = {
+            type: jsPsychCallFunction,
+            func: function () {
+                // Convert participant data into canonical form
+                const participantDemo = parseDemographics(
+                    participantRace,
+                    participantGender,
+                    participantAge,
+                );
+                console.log("Parsed participant demo:", participantDemo);
+
+                // drawTwoDistinctSets from helpers.js ensures no overlap
+                const { setA, setB } = drawTwoDistinctSets(
+                    participantDemo,
+                    characterImages,
+                );
+
+                // Forced-choice set => setA, Ranking set => setB
+                choiceImages = setA;
+                rankImages = setB;
+
+                // === LOG number of shared features for each image ===
+                console.log("Forced-choice setA (with shared features):");
+                choiceImages.forEach((img) => {
+                    const charDemo = parseImageDemographicsFromPath(img);
+                    const shared = countSharedFeatures(
+                        participantDemo,
+                        charDemo,
+                    );
+                    console.log(`${img} => shared features: ${shared}`);
+                });
+
+                console.log("Ranking setB (with shared features):");
+                rankImages.forEach((img) => {
+                    const charDemo = parseImageDemographicsFromPath(img);
+                    const shared = countSharedFeatures(
+                        participantDemo,
+                        charDemo,
+                    );
+                    console.log(`${img} => shared features: ${shared}`);
+                });
+            },
+        };
+
+        /*
+    Build forced-choice trials from 'choiceImages'
+  */
+        const buildChoiceTrials = {
+            type: jsPsychCallFunction,
+            func: function () {
+                let all_pairs = generateAllPairs(choiceImages.length);
+                all_pairs = jsPsych.randomization.shuffle(all_pairs);
+
+                if (TRIAL_COUNT > 0 && TRIAL_COUNT < all_pairs.length) {
+                    all_pairs = all_pairs.slice(0, TRIAL_COUNT);
+                }
+                all_pairs = rearrangeTrials(all_pairs);
+
+                const forcedChoiceTrials = [];
+                for (let k = 0; k < all_pairs.length; k++) {
+                    const [i, j] = all_pairs[k];
+                    // Safety check if array smaller than expected
+                    if (!choiceImages[i] || !choiceImages[j]) continue;
+
+                    const leftHTML = generateCharacterHTML(choiceImages[i]);
+                    const rightHTML = generateCharacterHTML(choiceImages[j]);
+
+                    forcedChoiceTrials.push({
+                        type: jsPsychHtmlButtonResponse,
+                        enable_button_after: 500,
+                        stimulus: `
+            <div class="trial-container">
+              <div class="character-container">${leftHTML}</div>
+              <div class="character-container">${rightHTML}</div>
+            </div>`,
+                        choices: ["Left", "Right"],
+                        prompt: "<p>Please choose the player that you prefer for your team.</p>",
+                        data: {
+                            left_image: choiceImages[i],
+                            right_image: choiceImages[j],
+                        },
+                        on_finish: function (data) {
+                            data.choice =
+                                data.response === 0 ? "left" : "right";
+                        },
+                    });
+                }
+
+                choice_trials_block = [
+                    instructions_forced_choice,
+                    ...forcedChoiceTrials,
+                ];
+            },
+        };
+
+        /*
+    Build ranking trials from 'rankImages'
+  */
+        const buildRankTrials = {
+            type: jsPsychCallFunction,
+            func: function () {
+                const rankHTML = rankImages.map(generateCharacterHTML);
+
+                const instructions_ranking = {
+                    type: jsPsychInstructions,
+                    pages: [
+                        `<div class="form-container" style="border-radius: 12px; border: 2px solid #ccc; padding: 20px; background-color: #fff;">
+             <h2>Team Selection - Player Ranking</h2>
+             ${CONDITION ? COMPETITIVE_RANK_INSTRUCTIONS : CASUAL_RANK_INSTRUCTIONS}
+             <p><strong>Please rank the players based on your relative preferences, ranking them from most preferred to least preferred. The rank numbers indicate your preferences, continuing across both teams.</strong></p>
+             <p>Your most preferred player should be at the top of "Your Team" with rank 1st, and your least preferred character should be at the bottom of "${CONDITION ? COMPETITIVE_OPPOSING_TEAM_NAME : CASUAL_OPPOSING_TEAM_NAME}" with the highest rank number.</p>
+           </div>`,
+                    ],
+                    show_clickable_nav: true,
+                    allow_backward: false,
+                    button_label_next: "Continue",
+                    data: { condition: CONDITION },
+                };
+
+                const rank_trial = {
+                    type: jsPsychSortableRank,
+                    instructions: `
+          <div class="form-container" style="border-radius: 12px; border: 2px solid #ccc; padding: 20px; background-color: #fff;">
+            ${CONDITION ? COMPETITIVE_RANK_INSTRUCTIONS : CASUAL_RANK_INSTRUCTIONS}
+            <p>Please rank characters from most preferred to least preferred to include on your team. Your most preferred teammate should be ranked first in your team while your least preferred character should be ranked last in the other team.</p>
+          </div>`,
+                    items: [
+                        generateParticipantHTML(PARTICIPANT_IMAGE),
+                        generateOpponentHTML(PARTICIPANT_IMAGE),
+                        ...rankHTML,
+                    ],
+                    labels: [
+                        PARTICIPANT_IMAGE,
+                        PARTICIPANT_IMAGE,
+                        ...rankImages,
+                    ],
+                    animation_duration: 150,
+                    required_items_team_a: REQUIRED_ITEMS_TEAM_A,
+                    error_message: ERROR_MESSAGE,
+                    team_labels: [
+                        "Your Team",
+                        "Unsorted",
+                        CONDITION
+                            ? COMPETITIVE_OPPOSING_TEAM_NAME
+                            : CASUAL_OPPOSING_TEAM_NAME,
+                    ],
+                    on_finish: function (data) {
+                        console.log(data.response);
+                    },
+                };
+
+                ranked_trials_block = [instructions_ranking, rank_trial];
+            },
+        };
+
+        /*
+    Callback to merge forced-choice + ranking blocks into final timeline
+  */
+        const loadChoiceAndRanking = {
+            type: jsPsychCallFunction,
+            func: function () {
+                const trials_order =
+                    RANDOMIZED_ORDER === 0
+                        ? [choice_trials_block, loading, ranked_trials_block]
+                        : [ranked_trials_block, loading, choice_trials_block];
+
+                // Add them to the timeline dynamically
+                jsPsych.addNodeToEndOfTimeline({
+                    timeline: trials_order.flat(),
+                });
+                // Then add debriefing, finished
+                jsPsych.addNodeToEndOfTimeline({
+                    timeline: [debriefing, finished],
+                });
+            },
+        };
+
+        /*
+    9) Debriefing
+  */
+        const debriefing = {
+            type: jsPsychSurveyHtmlForm,
+            preamble: "<h2>Game?</h2>",
+            html: DEBRIEFING_HTML,
+            button_label: "Next",
+            on_finish: function (data) {
+                console.log(data.response);
+            },
+        };
+
+        /*
+    10) Finished
+  */
+        const finished = {
+            type: jsPsychInstructions,
+            pages: FINISHED_PAGES,
+            show_clickable_nav: true,
+            button_label_next: "Finish",
+            allow_backward: false,
+        };
+
+        // *** Build the initial timeline ***
+        const timeline = [
+            age_confirmation,
+            instructions,
+            demographic_questions,
+            competitiveness_selfrating,
+            loading,
+            instructions_general,
+            lobby_loading,
+            define_trials,
+            buildChoiceTrials,
+            buildRankTrials,
+            loadChoiceAndRanking,
+            // Debriefing + finished are added dynamically in loadChoiceAndRanking
+        ];
+
+        // Finally run the experiment
+        jsPsych.run(timeline);
+    </script>
+</html>

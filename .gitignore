@@ -1,0 +1,17 @@
+materials/cfd/
+.vscode/
+/.luarc.json
+.DS_Store
+
+/.quarto/
+
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+
+/.quarto/
+/_manuscript
+
+/.luarc.json
+.claude/settings.local.json
+
+**/*.quarto_ipynb

@@ -1,0 +1,310 @@
+/* 
+   Sets the general styling for lists used in the draggable ranking tasks.
+   Removes default browser styling for lists (bullets/padding).
+*/
+.sortable-list {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* 
+   Defines each draggable item (player) in ranking tasks.
+   - Positioned relative for rank numbers overlay
+   - Using display:flex for a horizontal layout, unless overridden by media queries
+   - Margins/padding separate items and leave space for rank labels
+   - A white background with a border ensures a card-like appearance
+   - Border-radius adds slight rounding of corners
+*/
+.sortable-item {
+  display: flex;
+  align-items: center;
+  position: relative;
+  margin: 5px 0;
+  padding: 5px 10px 5px 60px;
+  cursor: grab;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  box-sizing: border-box;
+}
+
+/* 
+   Images inside draggable items (ranking tasks).
+   - Forces consistent sizing (200x150) with object-fit:contain
+   - Margin-right for spacing from text
+*/
+.sortable-item img {
+  width: 200px;
+  height: auto;
+  object-fit: contain;
+  margin: 0 auto;
+  display: block;
+}
+
+/* Also tighten spacing for text lines within the item */
+.sortable-item p {
+  margin: 0; 
+  line-height: 1.2;
+}
+
+/* 
+   Rank number text overlay (e.g., “1st”, “2nd”, etc.) for each item.
+   - Positioned absolutely on the left side
+   - Font formatting ensures it's noticeable
+*/
+.rank-number {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px; 
+  text-align: right;
+  font-weight: bold;
+  font-size: 18px;
+  margin-right: 20px; 
+}
+
+/* 
+   Main container for forms and instructions:
+   - Centered in the browser
+   - Light background with a border for clarity
+   - Max width ensures it doesn’t stretch too wide
+*/
+.form-container {
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  background-color: #fff;
+  border-radius: 12px;
+  border: 2px solid #ccc;
+  width: 100%;
+  max-width: 800px;
+  margin: auto;
+}
+
+/* 
+   A row containing a label and input side-by-side. 
+   - Spaced horizontally for readability
+*/
+.form-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 15px;
+}
+
+/* 
+   Labels in form rows:
+   - Bold text
+   - Occupies about 30% of the row
+*/
+.form-row label {
+  font-weight: bold;
+  width: 30%;
+  text-align: left;
+}
+
+/* 
+   Text inputs & selects occupy the remaining 60% 
+   to the right of the label
+*/
+.form-row select,
+.form-row input[type="text"] {
+  width: 60%;
+}
+
+/* 
+   A radio button group that sits in the form row. 
+   - Flex layout with a gap for spacing
+*/
+.form-row .radio-group {
+  display: flex;
+  justify-content: flex-start;
+  gap: 15px;
+  width: 60%;
+}
+
+/* 
+   Each radio input label in the group:
+   - Horizontal alignment so radio is next to text 
+*/
+.radio-group label {
+  display: flex;
+  align-items: center;
+  margin-right: 15px;
+}
+
+/* 
+   A full-width group for items that span the entire row 
+   (e.g. multiple radio buttons or bigger questions)
+*/
+.form-group-full {
+  width: 100%;
+  margin-bottom: 15px;
+}
+
+/* 
+   Bold label for full-width form elements:
+   - Stacked above the inputs
+*/
+.form-group-full label {
+  font-weight: bold;
+  display: block;
+  margin-bottom: 5px;
+}
+
+/* 
+   A horizontally laid-out radio button group for full-width rows.
+*/
+.form-group-full .radio-group {
+  display: flex;
+  justify-content: flex-start;
+  gap: 15px;
+}
+
+/* 
+   Media query for small screens:
+   - Stacks form rows vertically
+   - Makes images responsive inside the draggable items
+*/
+@media (max-width: 600px) {
+  .form-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .form-row label {
+    width: 100%;
+    margin-bottom: 5px;
+  }
+
+  .form-row select,
+  .form-row input[type="text"] {
+    width: 100%;
+  }
+
+  .form-row .radio-group {
+    width: 100%;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .sortable-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .sortable-item img {
+    margin-right: 0;
+    margin-bottom: 10px;
+    height: auto;
+    width: 100%;
+  }
+
+  .rank-number {
+    font-size: 16px;
+    margin-bottom: 10px;
+  }
+}
+
+/* 
+   Container for two-alternative forced choice (2AFC) trials:
+   - Places two character containers side by side
+*/
+.trial-container {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+}
+
+/* 
+   Each character container for 2AFC:
+   - Bordered box with centered text 
+   - 45% width so two containers fit on one row
+*/
+.character-container {
+  border: 1px solid #ccc;
+  padding: 10px;
+  width: 45%;
+  text-align: center;
+}
+
+/* 
+   Images in 2AFC trials:
+   - Consistent 300x400 size for clarity
+   - object-fit: contain ensures full image is visible
+*/
+.character-container img {
+  object-fit: contain;
+  width: 300px;
+  height: 400px;
+}
+
+/* 
+   Container for sorting items in a flexible wrap layout
+   during the single-list ranking trial
+*/
+.sortable-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* 
+   Layout for the two-team ranking trial:
+   - Side by side columns that can wrap on smaller screens
+   - Centers them horizontally
+*/
+.teams-container {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  margin: 0 auto;
+}
+
+/* 
+   Each column in the two-team layout:
+   - Has horizontal margin so the two columns are separate
+*/
+.team-column {
+  box-sizing: border-box;
+  margin: 0 20px;
+}
+
+/* 
+   Team labels are centered above each column 
+   (e.g. "Your Team" or "Opposing Team")
+*/
+.team-column h3 {
+  text-align: center;
+}
+
+/* 
+   Lists representing each team's roster:
+   - Enough vertical space to drop items
+   - None bullet points
+   - Subtle background color for clarity
+*/
+.team-list {
+  border: 1px solid #ccc;
+  min-height: 400px;
+  padding: 10px;
+  list-style-type: none;
+  background-color: #f9f9f9;
+  /* optional: max-height:600px with overflow-y:auto */
+}
+
+/* 
+   Shared styling for team-grid and team-list containers:
+   - Consistent border, padding, and background color
+   - overflow-y:auto allows scrolling if items exceed the container
+*/
+.team-grid, .team-list {
+  border: 1px solid #ccc;
+  padding: 10px;
+  background-color: #f9f9f9;
+  overflow-y: auto;
+}
